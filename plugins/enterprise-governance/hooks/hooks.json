@@ -5,14 +5,9 @@
         "matcher": "",
         "hooks": [
           {
-            "type": "http",
-            "url": "https://app.systemprompt.io/api/public/hooks/pre-tool-use",
-            "headers": {
-              "Authorization": "Bearer $SYSTEMPROMPT_TOKEN",
-              "Content-Type": "application/json"
-            },
-            "allowedEnvVars": ["SYSTEMPROMPT_TOKEN"],
-            "timeout": 10
+            "type": "command",
+            "command": "curl -s --max-time 10 -X POST \"${SYSTEMPROMPT_URL}/api/public/hooks/track?plugin_id=enterprise-governance\" -H \"Authorization: Bearer ${SYSTEMPROMPT_TOKEN}\" -H \"Content-Type: application/json\" -d \"$(cat)\" >/dev/null 2>&1 &\nexit 0",
+            "async": true
           }
         ]
       }
@@ -22,14 +17,9 @@
         "matcher": "",
         "hooks": [
           {
-            "type": "http",
-            "url": "https://app.systemprompt.io/api/public/hooks/post-tool-use",
-            "headers": {
-              "Authorization": "Bearer $SYSTEMPROMPT_TOKEN",
-              "Content-Type": "application/json"
-            },
-            "allowedEnvVars": ["SYSTEMPROMPT_TOKEN"],
-            "timeout": 10
+            "type": "command",
+            "command": "curl -s --max-time 10 -X POST \"${SYSTEMPROMPT_URL}/api/public/hooks/track?plugin_id=enterprise-governance\" -H \"Authorization: Bearer ${SYSTEMPROMPT_TOKEN}\" -H \"Content-Type: application/json\" -d \"$(cat)\" >/dev/null 2>&1 &\nexit 0",
+            "async": true
           }
         ]
       }
@@ -39,14 +29,9 @@
         "matcher": "",
         "hooks": [
           {
-            "type": "http",
-            "url": "https://app.systemprompt.io/api/public/hooks/session-stop",
-            "headers": {
-              "Authorization": "Bearer $SYSTEMPROMPT_TOKEN",
-              "Content-Type": "application/json"
-            },
-            "allowedEnvVars": ["SYSTEMPROMPT_TOKEN"],
-            "timeout": 10
+            "type": "command",
+            "command": "curl -s --max-time 10 -X POST \"${SYSTEMPROMPT_URL}/api/public/hooks/track?plugin_id=enterprise-governance\" -H \"Authorization: Bearer ${SYSTEMPROMPT_TOKEN}\" -H \"Content-Type: application/json\" -d \"$(cat)\" >/dev/null 2>&1 &\nexit 0",
+            "async": true
           }
         ]
       }
@@ -56,14 +41,9 @@
         "matcher": "",
         "hooks": [
           {
-            "type": "http",
-            "url": "https://app.systemprompt.io/api/public/hooks/notification",
-            "headers": {
-              "Authorization": "Bearer $SYSTEMPROMPT_TOKEN",
-              "Content-Type": "application/json"
-            },
-            "allowedEnvVars": ["SYSTEMPROMPT_TOKEN"],
-            "timeout": 10
+            "type": "command",
+            "command": "curl -s --max-time 10 -X POST \"${SYSTEMPROMPT_URL}/api/public/hooks/track?plugin_id=enterprise-governance\" -H \"Authorization: Bearer ${SYSTEMPROMPT_TOKEN}\" -H \"Content-Type: application/json\" -d \"$(cat)\" >/dev/null 2>&1 &\nexit 0",
+            "async": true
           }
         ]
       }
