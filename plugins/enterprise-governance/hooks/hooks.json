@@ -1,5 +1,16 @@
 {
   "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -z \"${SYSTEMPROMPT_URL}\" ] || [ -z \"${SYSTEMPROMPT_TOKEN}\" ]; then echo '{\"error\": \"Missing SYSTEMPROMPT_URL or SYSTEMPROMPT_TOKEN. Add them to ~/.claude/settings.json under the env key.\"}'; exit 1; fi && echo '{\"result\": \"ok\"}'",
+            "async": false
+          }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
         "matcher": "",
