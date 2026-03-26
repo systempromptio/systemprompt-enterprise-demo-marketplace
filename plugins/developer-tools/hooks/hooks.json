@@ -1,0 +1,72 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "http",
+            "url": "https://app.systemprompt.io/api/public/hooks/pre-tool-use",
+            "headers": {
+              "Authorization": "Bearer $SYSTEMPROMPT_TOKEN",
+              "Content-Type": "application/json"
+            },
+            "allowedEnvVars": ["SYSTEMPROMPT_TOKEN"],
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "http",
+            "url": "https://app.systemprompt.io/api/public/hooks/post-tool-use",
+            "headers": {
+              "Authorization": "Bearer $SYSTEMPROMPT_TOKEN",
+              "Content-Type": "application/json"
+            },
+            "allowedEnvVars": ["SYSTEMPROMPT_TOKEN"],
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "http",
+            "url": "https://app.systemprompt.io/api/public/hooks/session-stop",
+            "headers": {
+              "Authorization": "Bearer $SYSTEMPROMPT_TOKEN",
+              "Content-Type": "application/json"
+            },
+            "allowedEnvVars": ["SYSTEMPROMPT_TOKEN"],
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "http",
+            "url": "https://app.systemprompt.io/api/public/hooks/notification",
+            "headers": {
+              "Authorization": "Bearer $SYSTEMPROMPT_TOKEN",
+              "Content-Type": "application/json"
+            },
+            "allowedEnvVars": ["SYSTEMPROMPT_TOKEN"],
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

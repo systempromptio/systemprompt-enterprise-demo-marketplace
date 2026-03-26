@@ -1,0 +1,25 @@
+{
+  "name": "systemprompt-enterprise-demo",
+  "owner": {
+    "name": "systemprompt.io",
+    "email": "hello@systemprompt.io"
+  },
+  "metadata": {
+    "description": "Enterprise demo marketplace with HTTP hooks and per-user token injection",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "enterprise-governance",
+      "source": "./plugins/enterprise-governance",
+      "description": "Security review, compliance checks, and audit trail with HTTP hook tracking",
+      "version": "1.0.0"
+    },
+    {
+      "name": "developer-tools",
+      "source": "./plugins/developer-tools",
+      "description": "Code review checklists and standup summaries with HTTP hook tracking",
+      "version": "1.0.0"
+    }
+  ]
+}

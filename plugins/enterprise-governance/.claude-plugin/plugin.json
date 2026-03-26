@@ -1,0 +1,16 @@
+{
+  "name": "enterprise-governance",
+  "description": "Security review, compliance checks, and audit trail with HTTP hook tracking",
+  "version": "1.0.0",
+  "author": {
+    "name": "systemprompt.io"
+  },
+  "keywords": [
+    "enterprise",
+    "governance",
+    "security",
+    "compliance",
+    "hooks",
+    "audit"
+  ]
+}
