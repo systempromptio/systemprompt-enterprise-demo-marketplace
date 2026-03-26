@@ -1,142 +1,91 @@
-# systemprompt-enterprise-demo-marketplace
+# Enterprise Demo — foodles.com
 
-A Claude Code plugin marketplace demonstrating **per-user token injection** via environment variables. Install plugins from this public marketplace, set your personal token and platform URL once, and every hook call authenticates as you.
+Demonstrates enterprise governance for Claude Code using HTTP hooks, MCP servers, and secret detection policies.
 
-## Quick Start
+## What's Inside
 
-### 1. Get your credentials
+- **2 skills**: `example-web-search` (allowed) and `use-dangerous-secret` (blocked by governance)
+- **2 MCP servers**: `systemprompt` (admin tools) and `skill-manager` (user tools)
+- **HTTP hooks**: PreToolUse governance hook that blocks plaintext secrets, plus tracking hooks for all events
+- **No shell scripts** — all hooks use Claude Code's native `type: "http"` format
 
-Open your admin dashboard (e.g. `https://your-instance.systemprompt.io/admin/`) and click the **download icon** in the header. The install widget shows your:
+## Install
 
-- **SYSTEMPROMPT_URL** — your tenant's platform URL
-- **SYSTEMPROMPT_TOKEN** — your personal JWT token (click the eye icon to reveal, then copy)
+```bash
+claude plugin marketplace add systempromptio/systemprompt-enterprise-demo-marketplace
+```
 
-### 2. Configure Claude Code / Cowork
+## Setup
 
-Add the credentials to `~/.claude/settings.json`:
+Add your token to Claude Code settings:
 
 ```json
 {
   "env": {
-    "SYSTEMPROMPT_URL": "https://your-instance.systemprompt.io",
     "SYSTEMPROMPT_TOKEN": "your-jwt-here"
   }
 }
 ```
 
-**On Windows:** The file is at `%USERPROFILE%\.claude\settings.json`.
+Get your token from the admin dashboard at [abc3dd581f80.systemprompt.io/admin](https://abc3dd581f80.systemprompt.io/admin/) — click the download icon in the header to reveal your JWT.
 
-### 3. Install a plugin
+## Try It
 
-**Via Claude Code CLI:**
-```bash
-claude plugin marketplace add systempromptio/systemprompt-enterprise-demo-marketplace
-```
+### 1. Web Search (allowed)
 
-Then install either plugin:
-- `enterprise-governance` — security review and compliance checks
-- `developer-tools` — code review and standup summaries
+Ask Claude to search the web. The governance hook evaluates the tool call, allows it, and tracks the event.
 
-**Via Cowork:**
-Copy the GitHub URL from the install widget and paste it into Cowork's marketplace add dialog.
+### 2. Dangerous Secret (blocked)
 
-### 4. Verify
-
-Use Claude normally — any tool use triggers hooks automatically. Check your dashboard for incoming events:
-
-```bash
-systemprompt analytics overview
-```
+Ask Claude to use the dangerous secret skill. It will attempt to write a file containing `sk-ant-demo-FAKE12345678901234567890`. The PreToolUse governance hook detects the secret pattern and blocks the tool call.
 
 ## How It Works
 
-### The Problem
+### HTTP Hooks
 
-This marketplace is public — the same `hooks.json` is installed for every user. But each user needs:
-1. Their own identity token in hook headers
-2. Their own platform URL (subdomains are per-tenant)
-
-### The Solution
-
-Command hooks with `curl` use environment variables for both the URL and the Bearer token:
+All hooks use `type: "http"` with `allowedEnvVars` to resolve `$SYSTEMPROMPT_TOKEN` from your Claude settings at runtime:
 
 ```json
 {
-  "type": "command",
-  "command": "curl -s --max-time 10 -X POST \"${SYSTEMPROMPT_URL}/api/public/hooks/track?plugin_id=enterprise-governance\" -H \"Authorization: Bearer ${SYSTEMPROMPT_TOKEN}\" -H \"Content-Type: application/json\" -d \"$(cat)\" >/dev/null 2>&1 &\nexit 0",
-  "async": true
+  "type": "http",
+  "url": "https://abc3dd581f80.systemprompt.io/api/public/hooks/govern?plugin_id=enterprise-demo",
+  "headers": {
+    "Authorization": "Bearer $SYSTEMPROMPT_TOKEN"
+  },
+  "allowedEnvVars": ["SYSTEMPROMPT_TOKEN"],
+  "timeout": 10
 }
 ```
 
-- `${SYSTEMPROMPT_URL}` — your tenant's platform URL (set per-user in settings.json)
-- `${SYSTEMPROMPT_TOKEN}` — your personal JWT (set per-user in settings.json)
-- `$(cat)` — reads the hook event payload from stdin (Claude pipes it automatically)
-- `>/dev/null 2>&1 &` — backgrounds curl so it never blocks Claude
-- `async: true` — tells Claude not to wait for the hook to complete
+- **Governance** (`PreToolUse`): Synchronous. Returns `allow` or `deny` with a reason.
+- **Tracking** (all other events): Async fire-and-forget analytics.
 
-### Session validation
+### MCP Servers
 
-On `SessionStart`, the plugin validates that both environment variables are set. If either is missing, it returns an error message telling you to configure them:
+Both servers authenticate via OAuth — Claude Code handles the flow automatically on first use.
 
-```json
-{
-  "SessionStart": [{
-    "hooks": [{
-      "type": "command",
-      "command": "if [ -z \"${SYSTEMPROMPT_URL}\" ] || [ -z \"${SYSTEMPROMPT_TOKEN}\" ]; then echo '{\"error\": \"Missing SYSTEMPROMPT_URL or SYSTEMPROMPT_TOKEN\"}'; exit 1; fi && echo '{\"result\": \"ok\"}'",
-      "async": false
-    }]
-  }]
-}
-```
+- **systemprompt**: Platform administration tools (admin scope)
+- **skill-manager**: Skill and agent management tools (user scope)
 
-### Why command hooks instead of HTTP hooks?
+### Governance Rules
 
-Claude Code's native HTTP hooks (`type: "http"`) support env var interpolation in headers via `allowedEnvVars`, but **not in the URL field** ([GitHub issue #31653](https://github.com/anthropics/claude-code/issues/31653)). Since the platform URL contains a per-tenant subdomain, we use command hooks with curl where env vars work everywhere.
+The governance endpoint evaluates four rules:
 
-### Security Properties
-
-- No tokens or URLs in the repository (public repo is safe)
-- Each user's credentials stay on their machine in `~/.claude/settings.json`
-- Server validates the JWT and identifies the user
-- Without a valid token, hooks fail silently — Claude keeps working normally
-
-## Hook Events
-
-Both plugins track these events:
-
-| Event | When It Fires | What's Sent |
-|-------|--------------|-------------|
-| `SessionStart` | When Claude starts | Validates env vars are configured |
-| `PreToolUse` | Before any tool executes | Tool name, input, session context |
-| `PostToolUse` | After a tool completes | Tool name, output, duration, success/failure |
-| `Stop` | When the agent stops | Reason, final message |
-| `Notification` | On notification events | Notification content |
-
-## Testing
-
-### Test failure mode
-
-Remove `SYSTEMPROMPT_TOKEN` from settings.json. Hooks still fire but the server returns 401. Claude continues working — hooks fail silently.
+1. **Secret detection** — scans tool inputs for API keys, tokens, passwords, connection strings
+2. **Scope check** — enforces admin-only tool restrictions based on agent scope
+3. **Tool blocklist** — blocks destructive operations (delete, drop, destroy) for non-admin scopes
+4. **Rate limiting** — 60 tool calls per minute per session
 
 ## Plugin Structure
 
 ```
-plugins/enterprise-governance/
-  .claude-plugin/plugin.json    # Plugin manifest
-  hooks/hooks.json              # Command hooks with curl + env vars
-  skills/
-    security-review/SKILL.md    # Auto-triggers on security review tasks
-    compliance-check/SKILL.md   # Auto-triggers on compliance tasks
-  agents/
-    governance_agent.md         # Agent system prompt
-
-plugins/developer-tools/
+plugins/enterprise-demo/
   .claude-plugin/plugin.json
+  .mcp.json
   hooks/hooks.json
   skills/
-    code-review/SKILL.md
-    standup-summary/SKILL.md
+    example-web-search/SKILL.md
+    use-dangerous-secret/SKILL.md
 ```
 
 ## License
