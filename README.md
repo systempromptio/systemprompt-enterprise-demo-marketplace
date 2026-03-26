@@ -4,25 +4,16 @@ A Claude Code plugin marketplace demonstrating **per-user token injection** via 
 
 ## Quick Start
 
-### Install via marketplace (Claude Code)
+### 1. Get your credentials
 
-```bash
-claude plugin marketplace add systempromptio/systemprompt-enterprise-demo-marketplace
-```
+Open your admin dashboard (e.g. `https://your-instance.systemprompt.io/admin/`) and click the **download icon** in the header. The install widget shows your:
 
-Then install either plugin:
-- `enterprise-governance` — security review and compliance checks
-- `developer-tools` — code review and standup summaries
+- **SYSTEMPROMPT_URL** — your tenant's platform URL
+- **SYSTEMPROMPT_TOKEN** — your personal JWT token (click the eye icon to reveal, then copy)
 
-### Install via ZIP (Cowork)
+### 2. Configure Claude Code / Cowork
 
-1. Download or clone this repo
-2. ZIP the plugin folder (e.g., `plugins/enterprise-governance/`)
-3. In Cowork, go to Customize > Upload Plugin > drag the ZIP
-
-## Token Setup
-
-After installing a plugin, set your platform URL and personal token in `~/.claude/settings.json`:
+Add the credentials to `~/.claude/settings.json`:
 
 ```json
 {
@@ -33,9 +24,29 @@ After installing a plugin, set your platform URL and personal token in `~/.claud
 }
 ```
 
-Get your token from your systemprompt.io admin dashboard.
-
 **On Windows:** The file is at `%USERPROFILE%\.claude\settings.json`.
+
+### 3. Install a plugin
+
+**Via Claude Code CLI:**
+```bash
+claude plugin marketplace add systempromptio/systemprompt-enterprise-demo-marketplace
+```
+
+Then install either plugin:
+- `enterprise-governance` — security review and compliance checks
+- `developer-tools` — code review and standup summaries
+
+**Via Cowork:**
+Copy the GitHub URL from the install widget and paste it into Cowork's marketplace add dialog.
+
+### 4. Verify
+
+Use Claude normally — any tool use triggers hooks automatically. Check your dashboard for incoming events:
+
+```bash
+systemprompt analytics overview
+```
 
 ## How It Works
 
@@ -63,6 +74,22 @@ Command hooks with `curl` use environment variables for both the URL and the Bea
 - `>/dev/null 2>&1 &` — backgrounds curl so it never blocks Claude
 - `async: true` — tells Claude not to wait for the hook to complete
 
+### Session validation
+
+On `SessionStart`, the plugin validates that both environment variables are set. If either is missing, it returns an error message telling you to configure them:
+
+```json
+{
+  "SessionStart": [{
+    "hooks": [{
+      "type": "command",
+      "command": "if [ -z \"${SYSTEMPROMPT_URL}\" ] || [ -z \"${SYSTEMPROMPT_TOKEN}\" ]; then echo '{\"error\": \"Missing SYSTEMPROMPT_URL or SYSTEMPROMPT_TOKEN\"}'; exit 1; fi && echo '{\"result\": \"ok\"}'",
+      "async": false
+    }]
+  }]
+}
+```
+
 ### Why command hooks instead of HTTP hooks?
 
 Claude Code's native HTTP hooks (`type: "http"`) support env var interpolation in headers via `allowedEnvVars`, but **not in the URL field** ([GitHub issue #31653](https://github.com/anthropics/claude-code/issues/31653)). Since the platform URL contains a per-tenant subdomain, we use command hooks with curl where env vars work everywhere.
@@ -80,6 +107,7 @@ Both plugins track these events:
 
 | Event | When It Fires | What's Sent |
 |-------|--------------|-------------|
+| `SessionStart` | When Claude starts | Validates env vars are configured |
 | `PreToolUse` | Before any tool executes | Tool name, input, session context |
 | `PostToolUse` | After a tool completes | Tool name, output, duration, success/failure |
 | `Stop` | When the agent stops | Reason, final message |
@@ -87,50 +115,9 @@ Both plugins track these events:
 
 ## Testing
 
-### 1. Set your env vars
-
-Edit `~/.claude/settings.json` with your platform URL and JWT.
-
-### 2. Install a plugin
-
-Via marketplace add or ZIP upload (see Quick Start above).
-
-### 3. Use Claude normally
-
-Any tool use triggers `PreToolUse` and `PostToolUse` hooks automatically. The curl command posts to your platform with your JWT.
-
-### 4. Verify on the platform
-
-Check your dashboard for incoming events, or use the CLI:
-
-```bash
-systemprompt analytics overview
-```
-
-### 5. Test failure mode
+### Test failure mode
 
 Remove `SYSTEMPROMPT_TOKEN` from settings.json. Hooks still fire but the server returns 401. Claude continues working — hooks fail silently.
-
-## Customizing
-
-### Point at your own endpoint
-
-Fork this repo and change the URL pattern in `hooks/hooks.json`. The endpoint receives a JSON POST with the hook event payload.
-
-### Add more hook events
-
-Supported events: `PreToolUse`, `PostToolUse`, `PostToolUseFailure`, `Stop`, `Notification`, `SubagentStart`, `SubagentStop`, `PreCompact`, `UserPromptSubmit`, `PermissionRequest`, `TaskCompleted`, `TeammateIdle`, `ConfigChange`, `WorktreeCreate`, `WorktreeRemove`.
-
-### Add a matcher
-
-Filter hooks to specific tools:
-
-```json
-{
-  "matcher": "Bash",
-  "hooks": [{ "type": "command", "command": "...", "async": true }]
-}
-```
 
 ## Plugin Structure
 
